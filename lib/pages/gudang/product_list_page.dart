@@ -139,36 +139,108 @@ class _ProductListPageState extends State<ProductListPage> {
                           : Colors.green[100],
                       child: Text(
                         product.baseUnit.substring(0, 1).toUpperCase(),
-                        style: TextStyle(
-                          color: isLowStock ? Colors.red : Colors.green,
-                        ),
                       ),
                     ),
                     title: Text(
                       product.name,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    subtitle: Text('SKU: ${product.sku}'),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                    subtitle: Text(
+                      'SKU: ${product.sku}\nHarga Jual: Rp ${product.sellingPrice}',
+                    ), // Info tambahan
+                    // --- UBAH BAGIAN TRAILING JADI ROW KECIL ---
+                    trailing: Row(
+                      mainAxisSize:
+                          MainAxisSize.min, // Agar tidak memakan semua tempat
                       children: [
-                        Text(
-                          '${product.stockQuantity} ${product.baseUnit}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: isLowStock ? Colors.red : Colors.green,
-                          ),
-                        ),
-                        if (product.packagingUnit != null)
-                          Text(
-                            '(~ ${(product.stockQuantity / product.conversionFactor).toStringAsFixed(1)} ${product.packagingUnit})',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
+                        // Info Stok (Teks)
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              '${product.stockQuantity} ${product.baseUnit}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: isLowStock ? Colors.red : Colors.green,
+                              ),
                             ),
-                          ),
+                          ],
+                        ),
+                        const SizedBox(width: 10),
+
+                        // Tombol Edit (Pensil)
+                        IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.blue),
+                          onPressed: () async {
+                            // Buka Halaman Form dengan membawa data produk (Mode Edit)
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    AddProductPage(product: product),
+                              ),
+                            );
+                            if (result == true)
+                              _fetchProducts(); // Refresh list jika ada perubahan
+                          },
+                        ),
+
+                        // Tombol Hapus (Sampah)
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.grey),
+                          onPressed: () async {
+                            // Konfirmasi Hapus
+                            final confirm = await showDialog(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Hapus Barang?'),
+                                content: Text(
+                                  'Yakin hapus ${product.name}? Data stok akan hilang.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: const Text('Batal'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    child: const Text(
+                                      'Hapus',
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirm == true) {
+                              // Hapus dari Supabase
+                              try {
+                                await Supabase.instance.client
+                                    .from('products')
+                                    .delete()
+                                    .eq('id', product.id);
+                                _fetchProducts(); // Refresh
+                                if (mounted)
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Barang dihapus'),
+                                    ),
+                                  );
+                              } catch (e) {
+                                if (mounted)
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Gagal hapus (Mungkin sudah pernah dipakai transaksi)',
+                                      ),
+                                    ),
+                                  );
+                              }
+                            }
+                          },
+                        ),
                       ],
                     ),
                   );
