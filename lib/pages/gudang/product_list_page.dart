@@ -11,9 +11,12 @@ class ProductListPage extends StatefulWidget {
 }
 
 class _ProductListPageState extends State<ProductListPage> {
-  // Variable untuk menyimpan list barang
-  List<Product> _products = [];
+  // Dua variabel List: Satu untuk Master, Satu untuk Hasil Filter
+  List<Product> _allProducts = [];
+  List<Product> _filteredProducts = [];
+
   bool _isLoading = true;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -21,54 +24,124 @@ class _ProductListPageState extends State<ProductListPage> {
     _fetchProducts();
   }
 
-  // Fungsi mengambil data dari Supabase
   Future<void> _fetchProducts() async {
     try {
       final response = await Supabase.instance.client
           .from('products')
           .select()
-          .order('name', ascending: true); // Urutkan berdasarkan nama
+          .order('name', ascending: true);
 
       final data = response as List<dynamic>;
+      final products = data.map((json) => Product.fromJson(json)).toList();
 
       setState(() {
-        // Ubah JSON jadi List<Product> menggunakan Model yang tadi kita buat
-        _products = data.map((json) => Product.fromJson(json)).toList();
+        _allProducts = products;
+        _filteredProducts = products; // Awalnya tampilkan semua
         _isLoading = false;
       });
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        setState(() => _isLoading = false);
+      }
     }
+  }
+
+  // LOGIKA PENCARIAN
+  void _runFilter(String keyword) {
+    List<Product> results = [];
+    if (keyword.isEmpty) {
+      // Kalau kosong, kembalikan semua data
+      results = _allProducts;
+    } else {
+      // Filter berdasarkan Nama ATAU SKU (Case Insensitive)
+      results = _allProducts
+          .where(
+            (product) =>
+                product.name.toLowerCase().contains(keyword.toLowerCase()) ||
+                product.sku.toLowerCase().contains(keyword.toLowerCase()),
+          )
+          .toList();
+    }
+
+    // Update tampilan
+    setState(() {
+      _filteredProducts = results;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Data Barang & Stok')),
-
-      // --- PERUBAHAN MULAI DI SINI ---
-      // Bungkus konten dengan RefreshIndicator
+      appBar: AppBar(
+        title: const Text('Data Barang & Stok'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) =>
+                  _runFilter(value), // Panggil fungsi filter tiap ngetik
+              decoration: InputDecoration(
+                hintText: 'Cari Nama Barang atau SKU...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          _runFilter('');
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
       body: RefreshIndicator(
-        onRefresh: _fetchProducts, // Panggil fungsi ambil data saat ditarik
+        onRefresh: _fetchProducts,
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : _products.isEmpty
-            ? const Center(child: Text('Belum ada data barang.'))
-            // ListView harus punya physics agar bisa ditarik walau datanya sedikit
+            : _filteredProducts.isEmpty
+            ? const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.search_off, size: 60, color: Colors.grey),
+                    SizedBox(height: 10),
+                    Text('Barang tidak ditemukan'),
+                  ],
+                ),
+              )
             : ListView.separated(
                 physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: _products.length,
+                itemCount: _filteredProducts.length,
                 separatorBuilder: (context, index) => const Divider(),
                 itemBuilder: (context, index) {
-                  final product = _products[index];
+                  final product = _filteredProducts[index];
+                  // Warnai stok merah jika menipis
+                  final isLowStock = product.stockQuantity < 10;
+
                   return ListTile(
-                    // ... (Isi ListTile TETAP SAMA seperti sebelumnya) ...
                     leading: CircleAvatar(
-                      backgroundColor: Colors.green[100],
+                      backgroundColor: isLowStock
+                          ? Colors.red[100]
+                          : Colors.green[100],
                       child: Text(
                         product.baseUnit.substring(0, 1).toUpperCase(),
+                        style: TextStyle(
+                          color: isLowStock ? Colors.red : Colors.green,
+                        ),
                       ),
                     ),
                     title: Text(
@@ -82,10 +155,10 @@ class _ProductListPageState extends State<ProductListPage> {
                       children: [
                         Text(
                           '${product.stockQuantity} ${product.baseUnit}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Colors.green,
+                            color: isLowStock ? Colors.red : Colors.green,
                           ),
                         ),
                         if (product.packagingUnit != null)
@@ -104,13 +177,10 @@ class _ProductListPageState extends State<ProductListPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          // Buka halaman tambah, dan tunggu hasilnya (await)
           final result = await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const AddProductPage()),
           );
-
-          // Jika result == true (berhasil simpan), refresh data
           if (result == true) {
             _fetchProducts();
           }
