@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:intl/intl.dart'; // Pastikan library intl terinstall
+import 'package:intl/intl.dart';
+import 'transaction_detail_page.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -107,6 +108,15 @@ class _HistoryPageState extends State<HistoryPage> {
                   ),
                   elevation: 2,
                   child: ListTile(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (c) =>
+                              TransactionDetailPage(transaction: trx),
+                        ),
+                      );
+                    },
                     leading: CircleAvatar(
                       backgroundColor: iconBgColor, // Ikut logika Stok
                       child: Icon(
