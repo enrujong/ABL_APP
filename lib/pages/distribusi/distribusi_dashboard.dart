@@ -5,6 +5,7 @@ import '../../widgets/stat_card.dart';
 import '../history_page.dart';
 import '../partner_list_page.dart';
 import 'barang_keluar_page.dart';
+import 'invoice_page.dart'; // <--- 1. JANGAN LUPA IMPORT INI
 
 class DistribusiDashboard extends StatefulWidget {
   const DistribusiDashboard({super.key});
@@ -16,7 +17,7 @@ class DistribusiDashboard extends StatefulWidget {
 class _DistribusiDashboardState extends State<DistribusiDashboard> {
   int _pendingInvoices = 0;
   double _todaySales = 0;
-  bool _isLoading = false; // Tambahan untuk indikator loading
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -41,7 +42,7 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
     final List data = response as List;
 
     int pendingCount = 0;
-    double sumSalesMonthly = 0; // Ubah nama variabel biar jelas
+    double sumSalesMonthly = 0;
 
     for (var item in data) {
       // Hitung Tagihan Tempo
@@ -51,13 +52,9 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
 
       // Hitung Penjualan BULAN INI
       if (item['transaction_date'] != null) {
-        // Tetap pakai .toLocal() agar tanggalnya akurat sesuai jam Indonesia
         final trxDate = DateTime.parse(item['transaction_date']).toLocal();
-
-        // Ubah tanggal transaksi jadi format "yyyy-MM" juga
         final trxMonthStr = DateFormat('yyyy-MM').format(trxDate);
 
-        // Bandingkan: Apakah Bulan & Tahunnya sama?
         if (trxMonthStr == currentMonthStr) {
           sumSalesMonthly += (item['total_amount'] ?? 0).toDouble();
         }
@@ -67,7 +64,7 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
     if (mounted) {
       setState(() {
         _pendingInvoices = pendingCount;
-        _todaySales = sumSalesMonthly; // Simpan total bulanan ke variabel ini
+        _todaySales = sumSalesMonthly;
         _isLoading = false;
       });
     }
@@ -107,7 +104,6 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
           ),
         ],
       ),
-      // Bungkus dengan RefreshIndicator agar bisa ditarik
       body: RefreshIndicator(
         onRefresh: _fetchStats,
         child: SingleChildScrollView(
@@ -136,41 +132,69 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
 
               const SizedBox(height: 40),
 
-              // --- MENU UTAMA ---
+              // --- MENU OPERASIONAL ---
               const Text(
                 'Menu Operasional',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
 
+              // 2. DI SINI PERUBAHANNYA: Kita pakai Column agar tombol bisa ditumpuk
               Center(
-                child: SizedBox(
-                  width: 280,
-                  height: 50,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                    ),
-                    icon: const Icon(Icons.note_add),
-                    label: const Text('Buat Surat Jalan Baru'),
-                    // --- PERBAIKAN UTAMA ADA DI SINI ---
-                    onPressed: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (c) => const BarangKeluarPage(),
+                child: Column(
+                  children: [
+                    // --- TOMBOL 1: BUAT SURAT JALAN ---
+                    SizedBox(
+                      width: 280,
+                      height: 50,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
                         ),
-                      );
-                      // Refresh data setelah balik dari halaman transaksi
-                      _fetchStats();
-                    },
-                    // -----------------------------------
-                  ),
+                        icon: const Icon(Icons.note_add),
+                        label: const Text('Buat Surat Jalan Baru'),
+                        onPressed: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (c) => const BarangKeluarPage(),
+                            ),
+                          );
+                          _fetchStats();
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(height: 15), // Jarak antar tombol
+                    // --- TOMBOL 2: CEK TAGIHAN (BARU) ---
+                    SizedBox(
+                      width: 280,
+                      height: 50,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              Colors.orange[800], // Warna Oranye biar beda
+                          foregroundColor: Colors.white,
+                        ),
+                        icon: const Icon(Icons.payments),
+                        label: const Text('Cek Tagihan Belum Lunas'),
+                        onPressed: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (c) => const InvoicePage(),
+                            ),
+                          );
+                          // Refresh Dashboard setelah balik (siapa tau ada yg dilunasi)
+                          _fetchStats();
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
-              // Teks kecil info update (opsional)
               if (_isLoading)
                 const Padding(
                   padding: EdgeInsets.only(top: 20),
