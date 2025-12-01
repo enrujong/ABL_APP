@@ -5,6 +5,7 @@ import '../history_page.dart';
 import '../partner_list_page.dart';
 import 'product_list_page.dart';
 import 'barang_masuk_page.dart';
+import 'stock_opname_page.dart';
 
 class GudangDashboard extends StatefulWidget {
   const GudangDashboard({super.key});
@@ -142,6 +143,29 @@ class _GudangDashboardState extends State<GudangDashboard> {
                             builder: (c) => const BarangMasukPage(),
                           ),
                         ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 280,
+                      height: 50,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(
+                          Icons.content_paste_search,
+                        ), // Ikon Inspeksi
+                        label: const Text('Stock Opname / Barang Rusak'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange[800], // Warna Oranye
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (c) => const StockOpnamePage(),
+                            ),
+                          );
+                          _fetchStats(); // Refresh statistik stok menipis
+                        },
                       ),
                     ),
                   ],
