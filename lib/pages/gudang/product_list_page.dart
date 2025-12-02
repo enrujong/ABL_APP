@@ -181,8 +181,9 @@ class _ProductListPageState extends State<ProductListPage> {
                                     AddProductPage(product: product),
                               ),
                             );
-                            if (result == true)
+                            if (result == true) {
                               _fetchProducts(); // Refresh list jika ada perubahan
+                            }
                           },
                         ),
 
@@ -222,14 +223,15 @@ class _ProductListPageState extends State<ProductListPage> {
                                     .delete()
                                     .eq('id', product.id);
                                 _fetchProducts(); // Refresh
-                                if (mounted)
+                                if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text('Barang dihapus'),
                                     ),
                                   );
+                                }
                               } catch (e) {
-                                if (mounted)
+                                if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text(
@@ -237,6 +239,7 @@ class _ProductListPageState extends State<ProductListPage> {
                                       ),
                                     ),
                                   );
+                                }
                               }
                             }
                           },

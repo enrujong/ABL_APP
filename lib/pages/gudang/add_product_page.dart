@@ -93,10 +93,11 @@ class _AddProductPageState extends State<AddProductPage> {
         Navigator.pop(context, true); // Kembali & Refresh
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

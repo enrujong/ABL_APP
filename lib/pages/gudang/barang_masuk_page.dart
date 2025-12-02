@@ -23,7 +23,7 @@ class _BarangMasukPageState extends State<BarangMasukPage> {
   final _priceController = TextEditingController(); // Harga Beli per Karton/Dus
 
   // Keranjang Sementara (Barang yang mau disimpan)
-  List<Map<String, dynamic>> _cartItems = [];
+  final List<Map<String, dynamic>> _cartItems = [];
   bool _isLoading = false;
 
   @override
@@ -197,7 +197,7 @@ class _BarangMasukPageState extends State<BarangMasukPage> {
                       labelText: 'Pilih Supplier',
                       border: OutlineInputBorder(),
                     ),
-                    value: _selectedSupplierId,
+                    initialValue: _selectedSupplierId,
                     items: _suppliers
                         .map(
                           (s) => DropdownMenuItem(
@@ -222,7 +222,7 @@ class _BarangMasukPageState extends State<BarangMasukPage> {
                       labelText: 'Pilih Barang',
                       border: OutlineInputBorder(),
                     ),
-                    value: _selectedProduct,
+                    initialValue: _selectedProduct,
                     items: _products
                         .map(
                           (p) => DropdownMenuItem(

@@ -20,7 +20,7 @@ class _BarangKeluarPageState extends State<BarangKeluarPage> {
   final _qtyController = TextEditingController();
 
   // Keranjang & Status
-  List<Map<String, dynamic>> _cartItems = [];
+  final List<Map<String, dynamic>> _cartItems = [];
   bool _isLoading = false;
   String _paymentType = 'LUNAS'; // Default Cash
 
@@ -161,10 +161,11 @@ class _BarangKeluarPageState extends State<BarangKeluarPage> {
         Navigator.pop(context);
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -192,7 +193,7 @@ class _BarangKeluarPageState extends State<BarangKeluarPage> {
                       labelText: 'Pilih Toko/Customer',
                       border: OutlineInputBorder(),
                     ),
-                    value: _selectedCustomerId,
+                    initialValue: _selectedCustomerId,
                     items: _customers
                         .map(
                           (c) => DropdownMenuItem(
@@ -235,7 +236,7 @@ class _BarangKeluarPageState extends State<BarangKeluarPage> {
                       labelText: 'Pilih Barang',
                       border: OutlineInputBorder(),
                     ),
-                    value: _selectedProduct,
+                    initialValue: _selectedProduct,
                     items: _products
                         .map(
                           (p) => DropdownMenuItem(

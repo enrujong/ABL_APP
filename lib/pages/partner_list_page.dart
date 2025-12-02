@@ -37,10 +37,11 @@ class _PartnerListPageState extends State<PartnerListPage>
         _isLoading = false;
       });
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
   }
 
@@ -74,7 +75,7 @@ class _PartnerListPageState extends State<PartnerListPage>
             ),
             const SizedBox(height: 20),
             DropdownButtonFormField<String>(
-              value: selectedType,
+              initialValue: selectedType,
               decoration: const InputDecoration(
                 labelText: 'Tipe Mitra',
                 border: OutlineInputBorder(),
@@ -154,12 +155,13 @@ class _PartnerListPageState extends State<PartnerListPage>
         await Supabase.instance.client.from('partners').delete().eq('id', id);
         _fetchPartners();
       } catch (e) {
-        if (mounted)
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Gagal Hapus (Mungkin ada transaksi terkait)'),
             ),
           );
+        }
       }
     }
   }
