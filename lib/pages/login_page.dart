@@ -42,7 +42,7 @@ class LoginPage extends StatelessWidget {
                   ),
                 ),
                 const Text(
-                  'PT. Abadi Jaya Lestarindo',
+                  'PT. Abadi Berkat Lestarindo',
                   style: TextStyle(color: Colors.white70, fontSize: 16),
                 ),
                 const SizedBox(height: 50),

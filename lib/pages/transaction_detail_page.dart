@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import '../utils/pdf_helper.dart';
 
 class TransactionDetailPage extends StatefulWidget {
   final Map<String, dynamic>
@@ -73,12 +74,9 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
           IconButton(
             icon: const Icon(Icons.print),
             tooltip: 'Cetak Struk/Faktur',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Fitur Cetak PDF akan segera hadir!'),
-                ),
-              );
+            onPressed: () async {
+              // Panggil Fungsi PDF Helper
+              await PdfHelper.printInvoice(widget.transaction, _items);
             },
           ),
         ],
