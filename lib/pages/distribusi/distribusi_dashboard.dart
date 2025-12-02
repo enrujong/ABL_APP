@@ -17,15 +17,11 @@ class DistribusiDashboard extends StatefulWidget {
 class _DistribusiDashboardState extends State<DistribusiDashboard> {
   int _pendingInvoices = 0;
   double _todaySales = 0;
-  bool _isLoading = false;
 
-  // --- PALET WARNA BARU ---
-  final Color _colPrussianBlue = const Color(0xFF1D3557); // Dominan
-  final Color _colCeladonBlue = const Color(0xFF457B9D); // Aksen Biru
-  final Color _colHoneydew = const Color(0xFFF1FAEE); // Background
-  final Color _colImperialRed = const Color(
-    0xFFE63946,
-  ); // Aksen Merah (Penting)
+  // --- PALET WARNA ---
+  final Color _colPrussianBlue = const Color(0xFF1D3557);
+  final Color _colHoneydew = const Color(0xFFF1FAEE);
+  final Color _colImperialRed = const Color(0xFFE63946);
 
   @override
   void initState() {
@@ -34,36 +30,24 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
   }
 
   Future<void> _fetchStats() async {
-    setState(() => _isLoading = true);
     final supabase = Supabase.instance.client;
-
-    // 1. Ambil Penanda Bulan Ini (yyyy-MM)
     final now = DateTime.now();
     final currentMonthStr = DateFormat('yyyy-MM').format(now);
 
-    // 2. Tarik Transaksi OUT
     final response = await supabase
         .from('transactions')
         .select('total_amount, transaction_date, payment_status')
         .eq('transaction_type', 'OUT');
 
     final List data = response as List;
-
     int pendingCount = 0;
     double sumSalesMonthly = 0;
 
     for (var item in data) {
-      // Hitung Tagihan Tempo
-      if (item['payment_status'] == 'TEMPO') {
-        pendingCount++;
-      }
-
-      // Hitung Penjualan BULAN INI
+      if (item['payment_status'] == 'TEMPO') pendingCount++;
       if (item['transaction_date'] != null) {
         final trxDate = DateTime.parse(item['transaction_date']).toLocal();
-        final trxMonthStr = DateFormat('yyyy-MM').format(trxDate);
-
-        if (trxMonthStr == currentMonthStr) {
+        if (DateFormat('yyyy-MM').format(trxDate) == currentMonthStr) {
           sumSalesMonthly += (item['total_amount'] ?? 0).toDouble();
         }
       }
@@ -73,7 +57,6 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
       setState(() {
         _pendingInvoices = pendingCount;
         _todaySales = sumSalesMonthly;
-        _isLoading = false;
       });
     }
   }
@@ -89,12 +72,12 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _colHoneydew, // Background Bersih
+      backgroundColor: _colHoneydew,
       appBar: AppBar(
         title: const Text('Dashboard Distribusi'),
         backgroundColor: _colPrussianBlue,
         foregroundColor: _colHoneydew,
-        elevation: 4,
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.storefront_outlined),
@@ -114,56 +97,52 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _fetchStats,
-        color: _colPrussianBlue,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // --- STATISTIK ---
-              Row(
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // --- STATISTIK ---
+            SizedBox(
+              height: 160,
+              child: Row(
                 children: [
                   StatCard(
                     title: 'Tagihan Tempo (Aktif)',
                     value: _pendingInvoices.toString(),
                     icon: Icons.assignment_late,
-                    color:
-                        Colors.orange, // Tetap orange agar ikon warning jelas
+                    color: Colors.orange,
                   ),
-                  const SizedBox(width: 20),
+                  const SizedBox(width: 24),
                   StatCard(
                     title: 'Penjualan Bulan Ini',
                     value: _formatCurrency(_todaySales),
                     icon: Icons.monetization_on,
-                    color: Colors.green, // Hijau untuk uang
+                    color: Colors.green,
                   ),
                 ],
               ),
+            ),
 
-              const SizedBox(height: 50),
+            const SizedBox(height: 30),
 
-              // --- TITLE MENU ---
-              Text(
-                'Menu Operasional',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: _colPrussianBlue,
-                  letterSpacing: 0.5,
-                ),
+            Text(
+              'Menu Operasional',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: _colPrussianBlue,
               ),
-              const SizedBox(height: 20),
+            ),
 
-              // --- MENU BUTTONS (HORIZONTAL) ---
-              // Row + Expanded agar tombol membagi lebar layar
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 16),
+
+            // --- MENU TOMBOL MEMENUHI LAYAR ---
+            Expanded(
+              child: Row(
                 children: [
-                  // TOMBOL 1: BUAT SURAT JALAN
-                  _buildMenuCard(
+                  // TOMBOL 1: SURAT JALAN
+                  _buildFullCard(
                     label: 'Buat Surat Jalan\n(Transaksi Baru)',
                     icon: Icons.note_add,
                     color: _colPrussianBlue, // Warna Utama
@@ -178,12 +157,12 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
                     },
                   ),
 
-                  const SizedBox(width: 20), // Jarak
+                  const SizedBox(width: 24), // Jarak
                   // TOMBOL 2: CEK TAGIHAN
-                  _buildMenuCard(
+                  _buildFullCard(
                     label: 'Cek Tagihan\nBelum Lunas',
                     icon: Icons.payments,
-                    color: _colImperialRed, // Warna Merah (Urgensi Uang)
+                    color: _colImperialRed, // Warna Merah (Urgensi)
                     onTap: () async {
                       await Navigator.push(
                         context,
@@ -194,23 +173,15 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
                   ),
                 ],
               ),
-
-              if (_isLoading)
-                Padding(
-                  padding: const EdgeInsets.only(top: 30),
-                  child: Center(
-                    child: CircularProgressIndicator(color: _colPrussianBlue),
-                  ),
-                ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  // WIDGET KARTU MENU BESAR (Sama persis dengan Gudang agar konsisten)
-  Widget _buildMenuCard({
+  // Widget Helper (Sama seperti Gudang)
+  Widget _buildFullCard({
     required String label,
     required IconData icon,
     required Color color,
@@ -219,34 +190,31 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
     return Expanded(
       child: Material(
         color: color,
-        borderRadius: BorderRadius.circular(20),
-        elevation: 6,
+        borderRadius: BorderRadius.circular(24),
+        elevation: 8,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           splashColor: Colors.white24,
           child: Container(
-            height: 180, // Tinggi tombol besar
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Icon dalam lingkaran
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(icon, size: 40, color: Colors.white),
+                  child: Icon(icon, size: 48, color: Colors.white),
                 ),
-                const SizedBox(height: 20),
-                // Teks
+                const SizedBox(height: 24),
                 Text(
                   label,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                     height: 1.2,

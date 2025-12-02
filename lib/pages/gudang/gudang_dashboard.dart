@@ -18,7 +18,6 @@ class GudangDashboard extends StatefulWidget {
 class _GudangDashboardState extends State<GudangDashboard> {
   int _totalProducts = 0;
   int _lowStockItems = 0;
-  bool _isLoading = false;
 
   // --- PALET WARNA BARU ---
   final Color _colPrussianBlue = const Color(0xFF1D3557);
@@ -33,42 +32,25 @@ class _GudangDashboardState extends State<GudangDashboard> {
   }
 
   Future<void> _fetchStats() async {
-    setState(() => _isLoading = true);
     final supabase = Supabase.instance.client;
-
     try {
-      // 1. Hitung Total Jenis Barang
       final productRes = await supabase
           .from('products')
           .select('id')
           .count(CountOption.exact);
-
-      final productCount = productRes.count;
-
-      // 2. Hitung Barang Stok Menipis (< 10)
       final lowStockRes = await supabase
           .from('products')
           .select('id')
           .lt('stock_quantity', 10)
           .count(CountOption.exact);
 
-      final lowStockCount = lowStockRes.count;
-
       if (mounted) {
         setState(() {
-          _totalProducts = productCount;
-          _lowStockItems = lowStockCount;
-          _isLoading = false;
+          _totalProducts = productRes.count;
+          _lowStockItems = lowStockRes.count;
         });
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    }
+    } catch (_) {}
   }
 
   @override
@@ -79,7 +61,7 @@ class _GudangDashboardState extends State<GudangDashboard> {
         title: const Text('Dashboard Gudang'),
         backgroundColor: _colPrussianBlue,
         foregroundColor: _colHoneydew,
-        elevation: 4,
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.warehouse_outlined),
@@ -99,18 +81,16 @@ class _GudangDashboardState extends State<GudangDashboard> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _fetchStats,
-        color: _colPrussianBlue,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.stretch, // Memenuhi lebar layar
-            children: [
-              // --- STATISTIK CARDS ---
-              Row(
+      // Gunakan Column tanpa ScrollView agar bisa Expanded memenuhi layar
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // --- BAGIAN ATAS: STATISTIK ---
+            SizedBox(
+              height: 160, // Tinggi fix untuk statistik
+              child: Row(
                 children: [
                   StatCard(
                     title: 'Total Jenis Barang',
@@ -118,7 +98,7 @@ class _GudangDashboardState extends State<GudangDashboard> {
                     icon: Icons.category,
                     color: _colCeladonBlue,
                   ),
-                  const SizedBox(width: 20),
+                  const SizedBox(width: 24),
                   StatCard(
                     title: 'Stok Menipis (<10)',
                     value: _lowStockItems.toString(),
@@ -127,31 +107,30 @@ class _GudangDashboardState extends State<GudangDashboard> {
                   ),
                 ],
               ),
+            ),
 
-              const SizedBox(height: 50),
+            const SizedBox(height: 30),
 
-              // --- TITLE MENU ---
-              Text(
-                'Menu Operasional',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: _colPrussianBlue,
-                  letterSpacing: 0.5,
-                ),
+            Text(
+              'Menu Operasional',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: _colPrussianBlue,
               ),
-              const SizedBox(height: 20),
+            ),
 
-              // --- MENU BUTTONS (HORIZONTAL & BESAR) ---
-              // Menggunakan Row + Expanded agar tombol membagi rata lebar layar
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 16),
+
+            // --- BAGIAN BAWAH: MENU (MEMENUHI SISA LAYAR) ---
+            Expanded(
+              child: Row(
                 children: [
-                  // TOMBOL 1: LIHAT STOK
-                  _buildMenuCard(
+                  // TOMBOL 1: LIHAT STOK (Celadon Blue)
+                  _buildFullCard(
                     label: 'Lihat Stok\n& Barang',
                     icon: Icons.list_alt,
-                    color: _colCeladonBlue,
+                    color: _colCeladonBlue, // Warna BEDA 1
                     onTap: () async {
                       await Navigator.push(
                         context,
@@ -163,12 +142,13 @@ class _GudangDashboardState extends State<GudangDashboard> {
                     },
                   ),
 
-                  const SizedBox(width: 20), // Jarak horizontal antar tombol
-                  // TOMBOL 2: INPUT BARANG MASUK
-                  _buildMenuCard(
-                    label: 'Input Barang\nMasuk (Inbound)',
+                  const SizedBox(width: 24),
+
+                  // TOMBOL 2: INPUT BARANG (Prussian Blue)
+                  _buildFullCard(
+                    label: 'Input Barang\nMasuk',
                     icon: Icons.input,
-                    color: _colPrussianBlue,
+                    color: _colPrussianBlue, // Warna BEDA 2
                     onTap: () async {
                       await Navigator.push(
                         context,
@@ -180,14 +160,13 @@ class _GudangDashboardState extends State<GudangDashboard> {
                     },
                   ),
 
-                  const SizedBox(width: 20),
+                  const SizedBox(width: 24),
 
-                  // TOMBOL 3: STOCK OPNAME
-                  _buildMenuCard(
+                  // TOMBOL 3: STOCK OPNAME (Imperial Red)
+                  _buildFullCard(
                     label: 'Stock Opname\n/ Koreksi',
                     icon: Icons.content_paste_search,
-                    color:
-                        _colPrussianBlue, // Bisa diganti _colImperialRed kalau mau beda
+                    color: _colImperialRed, // Warna BEDA 3
                     onTap: () async {
                       await Navigator.push(
                         context,
@@ -200,16 +179,8 @@ class _GudangDashboardState extends State<GudangDashboard> {
                   ),
                 ],
               ),
-
-              if (_isLoading)
-                Padding(
-                  padding: const EdgeInsets.only(top: 30),
-                  child: Center(
-                    child: CircularProgressIndicator(color: _colPrussianBlue),
-                  ),
-                ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -222,60 +193,51 @@ class _GudangDashboardState extends State<GudangDashboard> {
         },
         backgroundColor: _colCeladonBlue,
         foregroundColor: Colors.white,
-        elevation: 4,
-        icon: const Icon(Icons.add, size: 28),
-        label: const Text(
-          'Barang Baru',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
+        icon: const Icon(Icons.add),
+        label: const Text('Barang Baru'),
       ),
     );
   }
 
-  // WIDGET BARU: KARTU MENU BESAR
-  Widget _buildMenuCard({
+  // Widget Tombol yang Memenuhi Ruang (Expanded)
+  Widget _buildFullCard({
     required String label,
     required IconData icon,
     required Color color,
     required VoidCallback onTap,
   }) {
     return Expanded(
-      // Agar memenuhi ruang horizontal
       child: Material(
         color: color,
-        borderRadius: BorderRadius.circular(20), // Sudut lebih bulat
-        elevation: 6, // Shadow lebih tebal
+        borderRadius: BorderRadius.circular(24),
+        elevation: 8, // Shadow lebih tebal
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           splashColor: Colors.white24,
           child: Container(
-            height: 180, // Tinggi tombol diperbesar (agar tidak gepeng)
-            padding: const EdgeInsets.all(20),
+            // Tidak perlu height fix, dia akan ikut tinggi parent (Expanded)
+            padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Icon Besar
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(
-                      0.2,
-                    ), // Lingkaran transparan
+                    color: Colors.white.withOpacity(0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(icon, size: 40, color: Colors.white),
+                  child: Icon(icon, size: 48, color: Colors.white),
                 ),
-                const SizedBox(height: 20),
-                // Text
+                const SizedBox(height: 24),
                 Text(
                   label,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 20, // Font lebih besar
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
-                    height: 1.2, // Spasi antar baris teks
+                    height: 1.2,
                   ),
                 ),
               ],
