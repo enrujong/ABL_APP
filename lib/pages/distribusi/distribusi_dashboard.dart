@@ -5,7 +5,7 @@ import '../../widgets/stat_card.dart';
 import '../history_page.dart';
 import '../partner_list_page.dart';
 import 'barang_keluar_page.dart';
-import 'invoice_page.dart'; // <--- 1. JANGAN LUPA IMPORT INI
+import 'invoice_page.dart';
 
 class DistribusiDashboard extends StatefulWidget {
   const DistribusiDashboard({super.key});
@@ -19,6 +19,14 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
   double _todaySales = 0;
   bool _isLoading = false;
 
+  // --- PALET WARNA BARU ---
+  final Color _colPrussianBlue = const Color(0xFF1D3557); // Dominan
+  final Color _colCeladonBlue = const Color(0xFF457B9D); // Aksen Biru
+  final Color _colHoneydew = const Color(0xFFF1FAEE); // Background
+  final Color _colImperialRed = const Color(
+    0xFFE63946,
+  ); // Aksen Merah (Penting)
+
   @override
   void initState() {
     super.initState();
@@ -29,7 +37,7 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
     setState(() => _isLoading = true);
     final supabase = Supabase.instance.client;
 
-    // 1. Ambil Penanda Bulan Ini (Format: Tahun-Bulan, misal "2025-11")
+    // 1. Ambil Penanda Bulan Ini (yyyy-MM)
     final now = DateTime.now();
     final currentMonthStr = DateFormat('yyyy-MM').format(now);
 
@@ -81,13 +89,15 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: _colHoneydew, // Background Bersih
       appBar: AppBar(
         title: const Text('Dashboard Distribusi'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
+        backgroundColor: _colPrussianBlue,
+        foregroundColor: _colHoneydew,
+        elevation: 4,
         actions: [
           IconButton(
-            icon: const Icon(Icons.people),
+            icon: const Icon(Icons.storefront_outlined),
             tooltip: 'Data Toko',
             onPressed: () => Navigator.push(
               context,
@@ -106,10 +116,12 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
       ),
       body: RefreshIndicator(
         onRefresh: _fetchStats,
+        color: _colPrussianBlue,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(24.0),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // --- STATISTIK ---
               Row(
@@ -118,89 +130,130 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
                     title: 'Tagihan Tempo (Aktif)',
                     value: _pendingInvoices.toString(),
                     icon: Icons.assignment_late,
-                    color: Colors.orange,
+                    color:
+                        Colors.orange, // Tetap orange agar ikon warning jelas
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 20),
                   StatCard(
                     title: 'Penjualan Bulan Ini',
                     value: _formatCurrency(_todaySales),
                     icon: Icons.monetization_on,
-                    color: Colors.green,
+                    color: Colors.green, // Hijau untuk uang
                   ),
                 ],
               ),
 
-              const SizedBox(height: 40),
+              const SizedBox(height: 50),
 
-              // --- MENU OPERASIONAL ---
-              const Text(
+              // --- TITLE MENU ---
+              Text(
                 'Menu Operasional',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: _colPrussianBlue,
+                  letterSpacing: 0.5,
+                ),
               ),
               const SizedBox(height: 20),
 
-              // 2. DI SINI PERUBAHANNYA: Kita pakai Column agar tombol bisa ditumpuk
-              Center(
-                child: Column(
-                  children: [
-                    // --- TOMBOL 1: BUAT SURAT JALAN ---
-                    SizedBox(
-                      width: 280,
-                      height: 50,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
+              // --- MENU BUTTONS (HORIZONTAL) ---
+              // Row + Expanded agar tombol membagi lebar layar
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // TOMBOL 1: BUAT SURAT JALAN
+                  _buildMenuCard(
+                    label: 'Buat Surat Jalan\n(Transaksi Baru)',
+                    icon: Icons.note_add,
+                    color: _colPrussianBlue, // Warna Utama
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (c) => const BarangKeluarPage(),
                         ),
-                        icon: const Icon(Icons.note_add),
-                        label: const Text('Buat Surat Jalan Baru'),
-                        onPressed: () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (c) => const BarangKeluarPage(),
-                            ),
-                          );
-                          _fetchStats();
-                        },
-                      ),
-                    ),
+                      );
+                      _fetchStats();
+                    },
+                  ),
 
-                    const SizedBox(height: 15), // Jarak antar tombol
-                    // --- TOMBOL 2: CEK TAGIHAN (BARU) ---
-                    SizedBox(
-                      width: 280,
-                      height: 50,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              Colors.orange[800], // Warna Oranye biar beda
-                          foregroundColor: Colors.white,
-                        ),
-                        icon: const Icon(Icons.payments),
-                        label: const Text('Cek Tagihan Belum Lunas'),
-                        onPressed: () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (c) => const InvoicePage(),
-                            ),
-                          );
-                          // Refresh Dashboard setelah balik (siapa tau ada yg dilunasi)
-                          _fetchStats();
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+                  const SizedBox(width: 20), // Jarak
+                  // TOMBOL 2: CEK TAGIHAN
+                  _buildMenuCard(
+                    label: 'Cek Tagihan\nBelum Lunas',
+                    icon: Icons.payments,
+                    color: _colImperialRed, // Warna Merah (Urgensi Uang)
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (c) => const InvoicePage()),
+                      );
+                      _fetchStats();
+                    },
+                  ),
+                ],
               ),
 
               if (_isLoading)
-                const Padding(
-                  padding: EdgeInsets.only(top: 20),
-                  child: CircularProgressIndicator(),
+                Padding(
+                  padding: const EdgeInsets.only(top: 30),
+                  child: Center(
+                    child: CircularProgressIndicator(color: _colPrussianBlue),
+                  ),
                 ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // WIDGET KARTU MENU BESAR (Sama persis dengan Gudang agar konsisten)
+  Widget _buildMenuCard({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: Material(
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+        elevation: 6,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          splashColor: Colors.white24,
+          child: Container(
+            height: 180, // Tinggi tombol besar
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Icon dalam lingkaran
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: 40, color: Colors.white),
+                ),
+                const SizedBox(height: 20),
+                // Teks
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    height: 1.2,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
