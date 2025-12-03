@@ -91,10 +91,11 @@ class _AddProductPageState extends State<AddProductPage> {
         Navigator.pop(context, true);
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -246,9 +247,9 @@ class _AddProductPageState extends State<AddProductPage> {
                         controller: _conversionController,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
-                          labelText: 'Isi per Dus (Konversi)',
+                          labelText: 'Isi per Dus/Box (Konversi)',
                           prefixIcon: Icon(Icons.calculate),
-                          helperText: '1 Dus isi berapa Pcs?',
+                          helperText: '1 Dus/Box isi berapa Pcs/Btl?',
                         ),
                         validator: (v) => v!.isEmpty ? 'Harus angka' : null,
                       ),

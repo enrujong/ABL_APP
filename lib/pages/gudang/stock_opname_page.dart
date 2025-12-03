@@ -90,10 +90,11 @@ class _StockOpnamePageState extends State<StockOpnamePage> {
         Navigator.pop(context);
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -140,7 +141,7 @@ class _StockOpnamePageState extends State<StockOpnamePage> {
                       labelText: 'Pilih Barang',
                       border: OutlineInputBorder(),
                     ),
-                    value: _selectedProduct,
+                    initialValue: _selectedProduct,
                     items: _products
                         .map(
                           (p) => DropdownMenuItem(
@@ -200,7 +201,7 @@ class _StockOpnamePageState extends State<StockOpnamePage> {
                     controller: _qtyController,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'Jumlah Fisik',
+                      labelText: 'Jumlah (Satuan Kecil)',
                       border: OutlineInputBorder(),
                     ),
                   ),

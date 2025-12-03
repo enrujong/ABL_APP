@@ -42,10 +42,11 @@ class _PartnerListPageState extends State<PartnerListPage>
         _isLoading = false;
       });
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
   }
 
@@ -57,7 +58,7 @@ class _PartnerListPageState extends State<PartnerListPage>
     final phoneCtrl = TextEditingController(text: partner?.phone ?? '');
 
     String selectedType = isEdit
-        ? partner!.type
+        ? partner.type
         : (_tabController.index == 0 ? 'SUPPLIER' : 'CUSTOMER');
 
     showDialog(
@@ -161,7 +162,7 @@ class _PartnerListPageState extends State<PartnerListPage>
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: selectedType,
+                      initialValue: selectedType,
                       decoration: InputDecoration(
                         labelText: 'Tipe Mitra',
                         prefixIcon: Icon(
@@ -202,7 +203,7 @@ class _PartnerListPageState extends State<PartnerListPage>
                       TextButton.icon(
                         onPressed: () {
                           Navigator.pop(context);
-                          _deletePartner(partner!.id);
+                          _deletePartner(partner.id);
                         },
                         icon: Icon(Icons.delete_outline, color: _colRed),
                         label: Text('Hapus', style: TextStyle(color: _colRed)),
@@ -253,7 +254,7 @@ class _PartnerListPageState extends State<PartnerListPage>
                             await Supabase.instance.client
                                 .from('partners')
                                 .update(data)
-                                .eq('id', partner!.id);
+                                .eq('id', partner.id);
                           } else {
                             await Supabase.instance.client
                                 .from('partners')
@@ -316,12 +317,13 @@ class _PartnerListPageState extends State<PartnerListPage>
         await Supabase.instance.client.from('partners').delete().eq('id', id);
         _fetchPartners();
       } catch (e) {
-        if (mounted)
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Gagal Hapus (Mungkin ada transaksi terkait)'),
             ),
           );
+        }
       }
     }
   }

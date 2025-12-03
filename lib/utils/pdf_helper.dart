@@ -10,9 +10,7 @@ class PdfHelper {
   ) async {
     final pdf = pw.Document();
 
-    // --- PERUBAHAN UTAMA DI SINI ---
-    // Kita pakai font bawaan PDF (Helvetica) biar tidak perlu download
-    // Ini lebih stabil untuk Windows Print to PDF
+    // Font standar
     final font = pw.Font.helvetica();
     final fontBold = pw.Font.helveticaBold();
 
@@ -26,10 +24,9 @@ class PdfHelper {
       ),
     );
 
-    // Tampilkan Dialog Print
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),
-      name: 'Invoice-${trx['id']}', // Memberi nama file default saat disimpan
+      name: 'Invoice-${trx['id']}',
     );
   }
 
@@ -41,17 +38,24 @@ class PdfHelper {
   ) {
     final isMasuk = trx['transaction_type'] == 'IN';
     final title = isMasuk ? 'BUKTI BARANG MASUK' : 'INVOICE / SURAT JALAN';
-    final themeColor = PdfColors.blue800;
+    const themeColor = PdfColors.blue800;
 
     final partnerName = trx['partners'] != null
         ? trx['partners']['name']
         : 'Umum';
 
+    // --- FORMAT TANGGAL ---
     String dateStr = '-';
     if (trx['transaction_date'] != null) {
       final date = DateTime.parse(trx['transaction_date']).toLocal();
-      // Kita sederhanakan format tanggal biar tidak error library locale
       dateStr = DateFormat('dd MMM yyyy, HH:mm').format(date);
+    }
+
+    // --- FORMAT JATUH TEMPO (BARU) ---
+    String dueDateStr = '-';
+    if (trx['due_date'] != null) {
+      final dueDate = DateTime.parse(trx['due_date']).toLocal();
+      dueDateStr = DateFormat('dd MMM yyyy').format(dueDate);
     }
 
     final formatCurrency = NumberFormat.currency(
@@ -72,7 +76,7 @@ class PdfHelper {
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
                 pw.Text(
-                  'PT. ABADI JAYA LESTARINDO',
+                  'PT. ABADI BERKAT LESTARINDO',
                   style: pw.TextStyle(
                     font: fontBold,
                     fontSize: 20,
@@ -81,7 +85,7 @@ class PdfHelper {
                 ),
                 pw.SizedBox(height: 4),
                 pw.Text(
-                  'Jl. Raya Utama No. 123',
+                  'Jl. Raya Utama No. 123, Kota Besar',
                   style: pw.TextStyle(
                     font: font,
                     fontSize: 10,
@@ -161,6 +165,18 @@ class PdfHelper {
                         ? PdfColors.green
                         : PdfColors.red,
                   ),
+
+                  // --- TAMBAHAN: INFO JATUH TEMPO ---
+                  if (trx['payment_status'] == 'TEMPO') ...[
+                    pw.SizedBox(height: 4),
+                    _buildInfoRow(
+                      'Jatuh Tempo',
+                      dueDateStr,
+                      font,
+                      fontBold,
+                      valueColor: PdfColors.red,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -177,7 +193,7 @@ class PdfHelper {
             color: PdfColors.white,
             fontSize: 10,
           ),
-          headerDecoration: pw.BoxDecoration(color: themeColor),
+          headerDecoration: const pw.BoxDecoration(color: themeColor),
           cellStyle: pw.TextStyle(font: font, fontSize: 10),
           cellHeight: 35,
           cellAlignments: {
@@ -186,7 +202,7 @@ class PdfHelper {
             2: pw.Alignment.centerRight,
             3: pw.Alignment.centerRight,
           },
-          oddRowDecoration: pw.BoxDecoration(color: PdfColors.grey50),
+          oddRowDecoration: const pw.BoxDecoration(color: PdfColors.grey50),
           headers: ['NAMA BARANG', 'QTY', 'HARGA', 'SUBTOTAL'],
           data: items.map((item) {
             final p = item['products'];
@@ -251,7 +267,7 @@ class PdfHelper {
       mainAxisSize: pw.MainAxisSize.min,
       children: [
         pw.SizedBox(
-          width: 60,
+          width: 75,
           child: pw.Text(
             '$label:',
             style: pw.TextStyle(

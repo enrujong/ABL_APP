@@ -24,7 +24,7 @@ class _BarangMasukPageState extends State<BarangMasukPage> {
   Product? _selectedProduct;
   final _qtyController = TextEditingController();
   final _priceController = TextEditingController();
-  List<Map<String, dynamic>> _cartItems = [];
+  final List<Map<String, dynamic>> _cartItems = [];
   bool _isLoading = false;
 
   final Color _colDarkGunmetal = const Color(0xFF2B2D42);
@@ -143,10 +143,11 @@ class _BarangMasukPageState extends State<BarangMasukPage> {
         Navigator.pop(context);
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -188,7 +189,7 @@ class _BarangMasukPageState extends State<BarangMasukPage> {
                       labelText: 'Pilih Supplier',
                       border: OutlineInputBorder(),
                     ),
-                    value: _selectedSupplierId,
+                    initialValue: _selectedSupplierId,
                     items: _suppliers
                         .map(
                           (s) => DropdownMenuItem(
@@ -212,7 +213,7 @@ class _BarangMasukPageState extends State<BarangMasukPage> {
                       labelText: 'Pilih Barang',
                       border: OutlineInputBorder(),
                     ),
-                    value: _selectedProduct,
+                    initialValue: _selectedProduct,
                     items: _products
                         .map(
                           (p) => DropdownMenuItem(
