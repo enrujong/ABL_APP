@@ -5,129 +5,118 @@ import 'distribusi/distribusi_dashboard.dart';
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
 
+  // --- PALET WARNA BARU ---
+  final Color _colDarkGunmetal = const Color(0xFF2B2D42); // Background Utama
+  final Color _colRed = const Color(0xFFEF233C); // Aksen Merah
+  final Color _colWhite = const Color(0xFFEDF2F4); // Teks/Card
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Background Gradient Biru Tua ke Biru Muda
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF1D3557),
-              Color(0xFF457B9D),
-            ], // Blue 900 -> Blue 500
-          ),
-        ),
-        child: Center(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Logo / Icon Besar
-                const Icon(
-                  Icons.inventory_2_outlined,
-                  size: 80,
-                  color: Colors.white,
+      backgroundColor: _colDarkGunmetal, // Background Gelap Solid
+      body: Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Logo / Icon Besar
+              Icon(
+                Icons.inventory_2_outlined,
+                size: 80,
+                color: _colRed,
+              ), // Ikon Merah menyala
+              const SizedBox(height: 20),
+              Text(
+                'Sistem Distribusi',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: _colWhite,
+                  letterSpacing: 1.2,
                 ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Sistem Distribusi & Gudang',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 1.2,
+              ),
+              const Text(
+                'PT. Abadi Jaya Lestarindo',
+                style: TextStyle(color: Colors.grey, fontSize: 16),
+              ),
+              const SizedBox(height: 50),
+
+              // Kartu Login
+              Card(
+                elevation: 8,
+                color: _colWhite, // Kartu Putih
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                child: Container(
+                  width: 400,
+                  padding: const EdgeInsets.all(40),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Selamat Datang',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Silahkan pilih role anda',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                      const SizedBox(height: 40),
+
+                      // Tombol Gudang
+                      _buildLoginButton(
+                        title: 'Masuk sebagai GUDANG',
+                        subtitle: 'Kelola Stok & Inbound',
+                        icon: Icons.warehouse,
+                        color: _colDarkGunmetal, // Tombol Gelap
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (c) => const GudangDashboard(),
+                            ),
+                          );
+                        },
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Tombol Distribusi
+                      _buildLoginButton(
+                        title: 'Masuk sebagai DISTRIBUSI',
+                        subtitle: 'Penjualan & Outbound',
+                        icon: Icons.local_shipping,
+                        color: _colRed, // Tombol Merah
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (c) => const DistribusiDashboard(),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
-                const Text(
-                  'PT. Abadi Berkat Lestarindo',
-                  style: TextStyle(color: Colors.white70, fontSize: 16),
-                ),
-                const SizedBox(height: 50),
+              ),
 
-                // Kartu Login
-                Card(
-                  elevation: 8,
-                  margin: const EdgeInsets.symmetric(horizontal: 24),
-                  // Batasi lebar kartu agar bagus di Desktop
-                  child: Container(
-                    width: 400,
-                    padding: const EdgeInsets.all(40),
-                    child: Column(
-                      children: [
-                        const Text(
-                          'Selamat Datang',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Silahkan pilih role anda untuk masuk',
-                          style: TextStyle(color: Colors.grey),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 40),
-
-                        // Tombol Gudang
-                        _buildLoginButton(
-                          context,
-                          title: 'Masuk sebagai GUDANG',
-                          subtitle: 'Kelola Stok & Inbound',
-                          icon: Icons.warehouse,
-                          color: Colors.green,
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (c) => const GudangDashboard(),
-                              ),
-                            );
-                          },
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // Tombol Distribusi
-                        _buildLoginButton(
-                          context,
-                          title: 'Masuk sebagai DISTRIBUSI',
-                          subtitle: 'Penjualan & Outbound',
-                          icon: Icons.local_shipping,
-                          color: Colors.blue,
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (c) => const DistribusiDashboard(),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-                const Text(
-                  'v1.0.0 • Developed with Flutter',
-                  style: TextStyle(color: Colors.white30, fontSize: 12),
-                ),
-              ],
-            ),
+              const SizedBox(height: 20),
+              const Text(
+                'v1.0.0 • Professional ERP',
+                style: TextStyle(color: Colors.white30, fontSize: 12),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  // Widget Tombol Custom biar rapi
-  Widget _buildLoginButton(
-    BuildContext context, {
+  Widget _buildLoginButton({
     required String title,
     required String subtitle,
     required IconData icon,
@@ -138,26 +127,18 @@ class LoginPage extends StatelessWidget {
       width: double.infinity,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          foregroundColor: color, // Warna teks mengikuti role
-          elevation: 0,
-          side: BorderSide(
-            color: color.withOpacity(0.2),
-            width: 1,
-          ), // Garis pinggir tipis
+          backgroundColor: color, // Warna tombol solid
+          foregroundColor: Colors.white, // Teks Putih
+          elevation: 4,
           padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
         onPressed: onPressed,
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, size: 28, color: color),
-            ),
+            Icon(icon, size: 28, color: Colors.white),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -168,17 +149,20 @@ class LoginPage extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
                     ),
                   ),
                   Text(
                     subtitle,
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: const TextStyle(fontSize: 12, color: Colors.white70),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[300]),
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Colors.white54,
+            ),
           ],
         ),
       ),

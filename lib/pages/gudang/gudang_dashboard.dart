@@ -19,11 +19,12 @@ class _GudangDashboardState extends State<GudangDashboard> {
   int _totalProducts = 0;
   int _lowStockItems = 0;
 
-  // --- PALET WARNA BARU ---
-  final Color _colPrussianBlue = const Color(0xFF1D3557);
-  final Color _colCeladonBlue = const Color(0xFF457B9D);
-  final Color _colHoneydew = const Color(0xFFF1FAEE);
-  final Color _colImperialRed = const Color(0xFFE63946);
+  // --- PALET WARNA BARU (PROFESSIONAL) ---
+  final Color _colDarkGunmetal = const Color(0xFF2B2D42); // Utama
+  final Color _colCoolGrey = const Color(0xFF8D99AE); // Sekunder
+  final Color _colWhite = const Color(0xFFEDF2F4); // Background
+  final Color _colRed = const Color(0xFFEF233C); // Aksen
+  final Color _colDarkRed = const Color(0xFFD90429); // Danger
 
   @override
   void initState() {
@@ -56,16 +57,15 @@ class _GudangDashboardState extends State<GudangDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _colHoneydew,
+      backgroundColor: _colWhite,
       appBar: AppBar(
         title: const Text('Dashboard Gudang'),
-        backgroundColor: _colPrussianBlue,
-        foregroundColor: _colHoneydew,
+        backgroundColor: _colDarkGunmetal,
+        foregroundColor: _colWhite,
         elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.warehouse_outlined),
-            tooltip: 'Data Supplier',
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (c) => const PartnerListPage()),
@@ -73,7 +73,6 @@ class _GudangDashboardState extends State<GudangDashboard> {
           ),
           IconButton(
             icon: const Icon(Icons.history),
-            tooltip: 'Riwayat',
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (c) => const HistoryPage()),
@@ -81,29 +80,28 @@ class _GudangDashboardState extends State<GudangDashboard> {
           ),
         ],
       ),
-      // Gunakan Column tanpa ScrollView agar bisa Expanded memenuhi layar
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // --- BAGIAN ATAS: STATISTIK ---
+            // --- STATISTIK ---
             SizedBox(
-              height: 160, // Tinggi fix untuk statistik
+              height: 160,
               child: Row(
                 children: [
                   StatCard(
                     title: 'Total Jenis Barang',
                     value: _totalProducts.toString(),
                     icon: Icons.category,
-                    color: _colCeladonBlue,
+                    color: _colCoolGrey, // Abu-abu elegan
                   ),
                   const SizedBox(width: 24),
                   StatCard(
                     title: 'Stok Menipis (<10)',
                     value: _lowStockItems.toString(),
                     icon: Icons.warning_amber_rounded,
-                    color: _colImperialRed,
+                    color: _colRed, // Merah menyala
                   ),
                 ],
               ),
@@ -116,21 +114,21 @@ class _GudangDashboardState extends State<GudangDashboard> {
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: _colPrussianBlue,
+                color: _colDarkGunmetal,
               ),
             ),
 
             const SizedBox(height: 16),
 
-            // --- BAGIAN BAWAH: MENU (MEMENUHI SISA LAYAR) ---
+            // --- MENU (EXPANDED) ---
             Expanded(
               child: Row(
                 children: [
-                  // TOMBOL 1: LIHAT STOK (Celadon Blue)
+                  // 1. LIHAT STOK (Abu-abu)
                   _buildFullCard(
                     label: 'Lihat Stok\n& Barang',
                     icon: Icons.list_alt,
-                    color: _colCeladonBlue, // Warna BEDA 1
+                    color: _colCoolGrey,
                     onTap: () async {
                       await Navigator.push(
                         context,
@@ -144,11 +142,11 @@ class _GudangDashboardState extends State<GudangDashboard> {
 
                   const SizedBox(width: 24),
 
-                  // TOMBOL 2: INPUT BARANG (Prussian Blue)
+                  // 2. INPUT BARANG (Biru Gelap)
                   _buildFullCard(
                     label: 'Input Barang\nMasuk',
                     icon: Icons.input,
-                    color: _colPrussianBlue, // Warna BEDA 2
+                    color: _colDarkGunmetal,
                     onTap: () async {
                       await Navigator.push(
                         context,
@@ -162,11 +160,11 @@ class _GudangDashboardState extends State<GudangDashboard> {
 
                   const SizedBox(width: 24),
 
-                  // TOMBOL 3: STOCK OPNAME (Imperial Red)
+                  // 3. STOCK OPNAME (Merah Gelap)
                   _buildFullCard(
                     label: 'Stock Opname\n/ Koreksi',
                     icon: Icons.content_paste_search,
-                    color: _colImperialRed, // Warna BEDA 3
+                    color: _colDarkRed,
                     onTap: () async {
                       await Navigator.push(
                         context,
@@ -191,7 +189,7 @@ class _GudangDashboardState extends State<GudangDashboard> {
           );
           _fetchStats();
         },
-        backgroundColor: _colCeladonBlue,
+        backgroundColor: _colDarkGunmetal,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
         label: const Text('Barang Baru'),
@@ -199,7 +197,6 @@ class _GudangDashboardState extends State<GudangDashboard> {
     );
   }
 
-  // Widget Tombol yang Memenuhi Ruang (Expanded)
   Widget _buildFullCard({
     required String label,
     required IconData icon,
@@ -210,13 +207,12 @@ class _GudangDashboardState extends State<GudangDashboard> {
       child: Material(
         color: color,
         borderRadius: BorderRadius.circular(24),
-        elevation: 8, // Shadow lebih tebal
+        elevation: 8,
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(24),
           splashColor: Colors.white24,
           child: Container(
-            // Tidak perlu height fix, dia akan ikut tinggi parent (Expanded)
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -234,7 +230,7 @@ class _GudangDashboardState extends State<GudangDashboard> {
                   label,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontSize: 20, // Font lebih besar
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                     height: 1.2,

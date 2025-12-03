@@ -18,10 +18,11 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
   int _pendingInvoices = 0;
   double _todaySales = 0;
 
-  // --- PALET WARNA ---
-  final Color _colPrussianBlue = const Color(0xFF1D3557);
-  final Color _colHoneydew = const Color(0xFFF1FAEE);
-  final Color _colImperialRed = const Color(0xFFE63946);
+  // --- PALET WARNA BARU (PROFESSIONAL) ---
+  final Color _colDarkGunmetal = const Color(0xFF2B2D42); // Utama
+  final Color _colCoolGrey = const Color(0xFF8D99AE); // Sekunder
+  final Color _colWhite = const Color(0xFFEDF2F4); // Background
+  final Color _colRed = const Color(0xFFEF233C); // Aksen Merah
 
   @override
   void initState() {
@@ -72,16 +73,15 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _colHoneydew,
+      backgroundColor: _colWhite,
       appBar: AppBar(
         title: const Text('Dashboard Distribusi'),
-        backgroundColor: _colPrussianBlue,
-        foregroundColor: _colHoneydew,
+        backgroundColor: _colDarkGunmetal,
+        foregroundColor: _colWhite,
         elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.storefront_outlined),
-            tooltip: 'Data Toko',
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (c) => const PartnerListPage()),
@@ -89,7 +89,6 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
           ),
           IconButton(
             icon: const Icon(Icons.history),
-            tooltip: 'Riwayat',
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (c) => const HistoryPage()),
@@ -111,14 +110,15 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
                     title: 'Tagihan Tempo (Aktif)',
                     value: _pendingInvoices.toString(),
                     icon: Icons.assignment_late,
-                    color: Colors.orange,
+                    color:
+                        _colCoolGrey, // Abu-abu biar tidak terlalu mengancam, tapi tetap jelas
                   ),
                   const SizedBox(width: 24),
                   StatCard(
                     title: 'Penjualan Bulan Ini',
                     value: _formatCurrency(_todaySales),
                     icon: Icons.monetization_on,
-                    color: Colors.green,
+                    color: _colDarkGunmetal, // Warna corporate untuk omzet
                   ),
                 ],
               ),
@@ -131,21 +131,21 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: _colPrussianBlue,
+                color: _colDarkGunmetal,
               ),
             ),
 
             const SizedBox(height: 16),
 
-            // --- MENU TOMBOL MEMENUHI LAYAR ---
+            // --- MENU (EXPANDED) ---
             Expanded(
               child: Row(
                 children: [
-                  // TOMBOL 1: SURAT JALAN
+                  // 1. BUAT SURAT JALAN (Biru Gelap)
                   _buildFullCard(
                     label: 'Buat Surat Jalan\n(Transaksi Baru)',
                     icon: Icons.note_add,
-                    color: _colPrussianBlue, // Warna Utama
+                    color: _colDarkGunmetal,
                     onTap: () async {
                       await Navigator.push(
                         context,
@@ -157,12 +157,14 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
                     },
                   ),
 
-                  const SizedBox(width: 24), // Jarak
-                  // TOMBOL 2: CEK TAGIHAN
+                  const SizedBox(width: 24),
+
+                  // 2. CEK TAGIHAN (Merah Terang)
                   _buildFullCard(
                     label: 'Cek Tagihan\nBelum Lunas',
                     icon: Icons.payments,
-                    color: _colImperialRed, // Warna Merah (Urgensi)
+                    color:
+                        _colRed, // Merah agar terlihat sebagai prioritas penagihan
                     onTap: () async {
                       await Navigator.push(
                         context,
@@ -180,7 +182,6 @@ class _DistribusiDashboardState extends State<DistribusiDashboard> {
     );
   }
 
-  // Widget Helper (Sama seperti Gudang)
   Widget _buildFullCard({
     required String label,
     required IconData icon,
