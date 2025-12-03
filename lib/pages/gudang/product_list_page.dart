@@ -11,12 +11,16 @@ class ProductListPage extends StatefulWidget {
 }
 
 class _ProductListPageState extends State<ProductListPage> {
-  // Dua variabel List: Satu untuk Master, Satu untuk Hasil Filter
   List<Product> _allProducts = [];
   List<Product> _filteredProducts = [];
-
   bool _isLoading = true;
   final TextEditingController _searchController = TextEditingController();
+
+  // --- WARNA ---
+  final Color _colDarkGunmetal = const Color(0xFF2B2D42);
+  final Color _colWhite = const Color(0xFFEDF2F4);
+  final Color _colRed = const Color(0xFFEF233C);
+  final Color _colGreen = const Color(0xFF2A9D8F);
 
   @override
   void initState() {
@@ -36,27 +40,19 @@ class _ProductListPageState extends State<ProductListPage> {
 
       setState(() {
         _allProducts = products;
-        _filteredProducts = products; // Awalnya tampilkan semua
+        _filteredProducts = products;
         _isLoading = false;
       });
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // LOGIKA PENCARIAN
   void _runFilter(String keyword) {
     List<Product> results = [];
     if (keyword.isEmpty) {
-      // Kalau kosong, kembalikan semua data
       results = _allProducts;
     } else {
-      // Filter berdasarkan Nama ATAU SKU (Case Insensitive)
       results = _allProducts
           .where(
             (product) =>
@@ -65,32 +61,31 @@ class _ProductListPageState extends State<ProductListPage> {
           )
           .toList();
     }
-
-    // Update tampilan
-    setState(() {
-      _filteredProducts = results;
-    });
+    setState(() => _filteredProducts = results);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: _colWhite,
       appBar: AppBar(
         title: const Text('Data Barang & Stok'),
+        backgroundColor: _colDarkGunmetal,
+        foregroundColor: _colWhite,
+        elevation: 0,
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
+          preferredSize: const Size.fromHeight(80),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
             child: TextField(
               controller: _searchController,
-              onChanged: (value) =>
-                  _runFilter(value), // Panggil fungsi filter tiap ngetik
+              onChanged: _runFilter,
               decoration: InputDecoration(
                 hintText: 'Cari Nama Barang atau SKU...',
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search, color: Colors.grey),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear),
+                        icon: const Icon(Icons.clear, color: Colors.grey),
                         onPressed: () {
                           _searchController.clear();
                           _runFilter('');
@@ -100,9 +95,10 @@ class _ProductListPageState extends State<ProductListPage> {
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
               ),
             ),
           ),
@@ -110,141 +106,112 @@ class _ProductListPageState extends State<ProductListPage> {
       ),
       body: RefreshIndicator(
         onRefresh: _fetchProducts,
+        color: _colDarkGunmetal,
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? Center(child: CircularProgressIndicator(color: _colDarkGunmetal))
             : _filteredProducts.isEmpty
-            ? const Center(
+            ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.search_off, size: 60, color: Colors.grey),
-                    SizedBox(height: 10),
-                    Text('Barang tidak ditemukan'),
+                    Icon(Icons.search_off, size: 60, color: Colors.grey[400]),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Barang tidak ditemukan',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
                   ],
                 ),
               )
             : ListView.separated(
-                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
                 itemCount: _filteredProducts.length,
-                separatorBuilder: (context, index) => const Divider(),
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 10),
                 itemBuilder: (context, index) {
                   final product = _filteredProducts[index];
-                  // Warnai stok merah jika menipis
                   final isLowStock = product.stockQuantity < 10;
 
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: isLowStock
-                          ? Colors.red[100]
-                          : Colors.green[100],
-                      child: Text(
-                        product.baseUnit.substring(0, 1).toUpperCase(),
+                  return Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
                       ),
-                    ),
-                    title: Text(
-                      product.name,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text(
-                      'SKU: ${product.sku}\nHarga Jual: Rp ${product.sellingPrice}',
-                    ), // Info tambahan
-                    // --- UBAH BAGIAN TRAILING JADI ROW KECIL ---
-                    trailing: Row(
-                      mainAxisSize:
-                          MainAxisSize.min, // Agar tidak memakan semua tempat
-                      children: [
-                        // Info Stok (Teks)
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
+                      leading: CircleAvatar(
+                        backgroundColor: isLowStock
+                            ? _colRed.withOpacity(0.1)
+                            : _colGreen.withOpacity(0.1),
+                        child: Text(
+                          product.baseUnit.substring(0, 1).toUpperCase(),
+                          style: TextStyle(
+                            color: isLowStock ? _colRed : _colGreen,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        product.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'SKU: ${product.sku}',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                            ),
+                          ),
+                          Text(
+                            'Jual: Rp ${product.sellingPrice}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                      trailing: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            '${product.stockQuantity} ${product.baseUnit}',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: isLowStock ? _colRed : _colGreen,
+                            ),
+                          ),
+                          if (product.packagingUnit != null)
                             Text(
-                              '${product.stockQuantity} ${product.baseUnit}',
+                              '(~ ${(product.stockQuantity / product.conversionFactor).toStringAsFixed(1)} ${product.packagingUnit})',
                               style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: isLowStock ? Colors.red : Colors.green,
+                                fontSize: 11,
+                                color: Colors.grey[500],
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(width: 10),
-
-                        // Tombol Edit (Pensil)
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blue),
-                          onPressed: () async {
-                            // Buka Halaman Form dengan membawa data produk (Mode Edit)
-                            final result = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    AddProductPage(product: product),
-                              ),
-                            );
-                            if (result == true) {
-                              _fetchProducts(); // Refresh list jika ada perubahan
-                            }
-                          },
-                        ),
-
-                        // Tombol Hapus (Sampah)
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.grey),
-                          onPressed: () async {
-                            // Konfirmasi Hapus
-                            final confirm = await showDialog(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                title: const Text('Hapus Barang?'),
-                                content: Text(
-                                  'Yakin hapus ${product.name}? Data stok akan hilang.',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx, false),
-                                    child: const Text('Batal'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx, true),
-                                    child: const Text(
-                                      'Hapus',
-                                      style: TextStyle(color: Colors.red),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-
-                            if (confirm == true) {
-                              // Hapus dari Supabase
-                              try {
-                                await Supabase.instance.client
-                                    .from('products')
-                                    .delete()
-                                    .eq('id', product.id);
-                                _fetchProducts(); // Refresh
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Barang dihapus'),
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Gagal hapus (Mungkin sudah pernah dipakai transaksi)',
-                                      ),
-                                    ),
-                                  );
-                                }
-                              }
-                            }
-                          },
-                        ),
-                      ],
+                        ],
+                      ),
+                      onTap: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                AddProductPage(product: product),
+                          ),
+                        );
+                        if (result == true) _fetchProducts();
+                      },
                     ),
                   );
                 },
@@ -256,10 +223,10 @@ class _ProductListPageState extends State<ProductListPage> {
             context,
             MaterialPageRoute(builder: (context) => const AddProductPage()),
           );
-          if (result == true) {
-            _fetchProducts();
-          }
+          if (result == true) _fetchProducts();
         },
+        backgroundColor: _colDarkGunmetal,
+        foregroundColor: Colors.white,
         child: const Icon(Icons.add),
       ),
     );

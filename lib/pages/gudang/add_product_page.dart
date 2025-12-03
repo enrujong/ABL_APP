@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../models/product_model.dart'; // Pastikan import model
+import '../../models/product_model.dart';
 
 class AddProductPage extends StatefulWidget {
-  final Product? product; // Tambahan: Terima data produk (Opsional)
+  final Product? product;
 
   const AddProductPage({super.key, this.product});
 
@@ -15,7 +15,6 @@ class _AddProductPageState extends State<AddProductPage> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
-  // Controller
   late TextEditingController _skuController;
   late TextEditingController _nameController;
   late TextEditingController _baseUnitController;
@@ -23,11 +22,14 @@ class _AddProductPageState extends State<AddProductPage> {
   late TextEditingController _conversionController;
   late TextEditingController _sellPriceController;
 
+  // --- PALET WARNA ---
+  final Color _colDarkGunmetal = const Color(0xFF2B2D42);
+  final Color _colWhite = const Color(0xFFEDF2F4);
+  final Color _colRed = const Color(0xFFEF233C);
+
   @override
   void initState() {
     super.initState();
-    // Jika ada data produk (Mode Edit), isi form dengan data lama
-    // Jika tidak (Mode Tambah), isi kosong
     final p = widget.product;
     _skuController = TextEditingController(text: p?.sku ?? '');
     _nameController = TextEditingController(text: p?.name ?? '');
@@ -65,15 +67,10 @@ class _AddProductPageState extends State<AddProductPage> {
       };
 
       if (widget.product == null) {
-        // --- MODE INSERT (TAMBAH BARU) ---
-        // Tambahan field default untuk barang baru
         data['stock_quantity'] = 0;
         data['average_cost_price'] = 0;
-
         await Supabase.instance.client.from('products').insert(data);
       } else {
-        // --- MODE UPDATE (EDIT DATA) ---
-        // Kita update berdasarkan ID
         await Supabase.instance.client
             .from('products')
             .update(data)
@@ -88,22 +85,21 @@ class _AddProductPageState extends State<AddProductPage> {
                   ? 'Barang Ditambahkan!'
                   : 'Barang Diperbarui!',
             ),
+            backgroundColor: _colDarkGunmetal,
           ),
         );
-        Navigator.pop(context, true); // Kembali & Refresh
+        Navigator.pop(context, true);
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted)
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // Jangan lupa dispose controller biar hemat memori
   @override
   void dispose() {
     _skuController.dispose();
@@ -117,104 +113,218 @@ class _AddProductPageState extends State<AddProductPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Ubah Judul Halaman sesuai mode
     final isEdit = widget.product != null;
 
     return Scaffold(
+      backgroundColor: _colWhite, // Background Putih Tulang
       appBar: AppBar(
-        title: Text(isEdit ? 'Edit Barang' : 'Tambah Barang Baru'),
+        title: Text(isEdit ? 'Edit Data Barang' : 'Tambah Barang Baru'),
+        backgroundColor: _colDarkGunmetal,
+        foregroundColor: _colWhite,
+        elevation: 0,
+        centerTitle: true,
       ),
       body: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 600),
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              children: [
-                TextFormField(
-                  controller: _skuController,
-                  decoration: const InputDecoration(
-                    labelText: 'SKU / Barcode',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
-                  // Jika Edit, SKU biasanya dikunci agar tidak kacau, tapi kalau mau dibuka boleh saja
-                  // readOnly: isEdit,
-                ),
-                const SizedBox(height: 20),
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nama Barang',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
-                ),
-                const SizedBox(height: 20),
-                TextFormField(
-                  controller: _sellPriceController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Harga Jual',
-                    border: OutlineInputBorder(),
-                    prefixText: 'Rp ',
-                  ),
-                  validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _baseUnitController,
+          child: Container(
+            constraints: const BoxConstraints(
+              maxWidth: 600,
+            ), // Batasi lebar agar rapi di Desktop
+            child: Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              color: Colors.white,
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // --- HEADER FORM ---
+                      Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: _colDarkGunmetal.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            isEdit ? Icons.edit_note : Icons.add_box,
+                            size: 40,
+                            color: _colDarkGunmetal,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // --- SECTION 1: IDENTITAS ---
+                      _buildSectionTitle('Identitas Barang'),
+                      const SizedBox(height: 16),
+
+                      TextFormField(
+                        controller: _skuController,
                         decoration: const InputDecoration(
-                          labelText: 'Satuan Kecil',
-                          border: OutlineInputBorder(),
+                          labelText: 'SKU / Kode Barcode',
+                          prefixIcon: Icon(Icons.qr_code),
+                          hintText: 'Scan atau ketik kode unik',
                         ),
                         validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
                       ),
-                    ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _packUnitController,
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _nameController,
                         decoration: const InputDecoration(
-                          labelText: 'Satuan Besar',
-                          border: OutlineInputBorder(),
+                          labelText: 'Nama Produk',
+                          prefixIcon: Icon(Icons.inventory_2),
+                          hintText: 'Contoh: Indomie Goreng',
+                        ),
+                        validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // --- SECTION 2: HARGA ---
+                      _buildSectionTitle('Harga Jual'),
+                      const SizedBox(height: 16),
+
+                      TextFormField(
+                        controller: _sellPriceController,
+                        keyboardType: TextInputType.number,
+                        style: TextStyle(
+                          color: _colDarkGunmetal,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'Harga Jual per Satuan Kecil',
+                          prefixIcon: Icon(Icons.monetization_on),
+                          prefixText: 'Rp ',
+                          suffixText: ',00',
+                        ),
+                        validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // --- SECTION 3: SATUAN & KONVERSI ---
+                      _buildSectionTitle('Satuan & Konversi'),
+                      const SizedBox(height: 16),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _baseUnitController,
+                              decoration: const InputDecoration(
+                                labelText: 'Satuan Kecil',
+                                prefixIcon: Icon(Icons.widgets),
+                                hintText: 'Pcs/Btl',
+                              ),
+                              validator: (v) =>
+                                  v!.isEmpty ? 'Wajib diisi' : null,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _packUnitController,
+                              decoration: const InputDecoration(
+                                labelText: 'Satuan Besar',
+                                prefixIcon: Icon(Icons.inbox),
+                                hintText: 'Dus/Box',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _conversionController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Isi per Dus (Konversi)',
+                          prefixIcon: Icon(Icons.calculate),
+                          helperText: '1 Dus isi berapa Pcs?',
+                        ),
+                        validator: (v) => v!.isEmpty ? 'Harus angka' : null,
+                      ),
+
+                      const SizedBox(height: 40),
+
+                      // --- TOMBOL SIMPAN ---
+                      SizedBox(
+                        height: 55,
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _isLoading ? null : _saveProduct,
+                          icon: _isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Icon(isEdit ? Icons.update : Icons.save),
+                          label: Text(
+                            isEdit
+                                ? 'UPDATE DATA BARANG'
+                                : 'SIMPAN BARANG BARU',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isEdit
+                                ? Colors.orange[800]
+                                : _colDarkGunmetal,
+                            foregroundColor: Colors.white,
+                            elevation: 4,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                TextFormField(
-                  controller: _conversionController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Isi per Dus',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (v) => v!.isEmpty ? 'Harus angka' : null,
-                ),
-                const SizedBox(height: 40),
-                SizedBox(
-                  height: 50,
-                  child: ElevatedButton.icon(
-                    onPressed: _isLoading ? null : _saveProduct,
-                    icon: Icon(isEdit ? Icons.edit : Icons.save),
-                    label: Text(isEdit ? 'UPDATE DATA' : 'SIMPAN BARANG'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isEdit ? Colors.orange : Colors.green,
-                      foregroundColor: Colors.white,
-                    ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  // Widget Helper untuk Judul Section
+  Widget _buildSectionTitle(String title) {
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 20,
+          decoration: BoxDecoration(
+            color: _colRed,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: _colDarkGunmetal,
+          ),
+        ),
+      ],
     );
   }
 }

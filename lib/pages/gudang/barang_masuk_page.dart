@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/product_model.dart';
+import 'package:intl/intl.dart';
 
 class BarangMasukPage extends StatefulWidget {
   const BarangMasukPage({super.key});
@@ -10,21 +11,25 @@ class BarangMasukPage extends StatefulWidget {
 }
 
 class _BarangMasukPageState extends State<BarangMasukPage> {
-  // Data dari Database
+  // ... (Bagian Variabel & Fungsi Logika TETAP SAMA, tidak perlu diubah) ...
+  // Salin logika initState, _loadInitialData, _addToCart, _submitTransaction dari file lama
+  // KARENA PANJANG, SAYA HANYA TULIS BAGIAN UI (BUILD) DI BAWAH INI.
+  // PASTIKAN KAMU MENYALIN LOGIKANYA JUGA JIKA KAMU REPLACE ALL.
+
+  // AGAR AMAN, INI SAYA TULIS FULL CODE-NYA:
+
   List<Product> _products = [];
   List<Map<String, dynamic>> _suppliers = [];
-
-  // Pilihan User
   String? _selectedSupplierId;
   Product? _selectedProduct;
-
-  // Inputan Form
-  final _qtyController = TextEditingController(); // Jumlah Karton/Dus
-  final _priceController = TextEditingController(); // Harga Beli per Karton/Dus
-
-  // Keranjang Sementara (Barang yang mau disimpan)
-  final List<Map<String, dynamic>> _cartItems = [];
+  final _qtyController = TextEditingController();
+  final _priceController = TextEditingController();
+  List<Map<String, dynamic>> _cartItems = [];
   bool _isLoading = false;
+
+  final Color _colDarkGunmetal = const Color(0xFF2B2D42);
+  final Color _colWhite = const Color(0xFFEDF2F4);
+  final Color _colGreen = const Color(0xFF2A9D8F);
 
   @override
   void initState() {
@@ -32,32 +37,25 @@ class _BarangMasukPageState extends State<BarangMasukPage> {
     _loadInitialData();
   }
 
-  // 1. Ambil data Produk & Supplier
   Future<void> _loadInitialData() async {
     final supabase = Supabase.instance.client;
-
-    // Ambil Produk
     final productResponse = await supabase
         .from('products')
         .select()
         .order('name');
-    final productsData = (productResponse as List)
-        .map((e) => Product.fromJson(e))
-        .toList();
-
-    // Ambil Supplier
     final supplierResponse = await supabase
         .from('partners')
         .select()
         .eq('type', 'SUPPLIER');
 
     setState(() {
-      _products = productsData;
+      _products = (productResponse as List)
+          .map((e) => Product.fromJson(e))
+          .toList();
       _suppliers = List<Map<String, dynamic>>.from(supplierResponse);
     });
   }
 
-  // 2. Logika Tambah ke Keranjang
   void _addToCart() {
     if (_selectedProduct == null ||
         _qtyController.text.isEmpty ||
@@ -67,76 +65,59 @@ class _BarangMasukPageState extends State<BarangMasukPage> {
       );
       return;
     }
-
     final int qtyDus = int.parse(_qtyController.text);
     final double priceDus = double.parse(_priceController.text);
-
-    // Konversi ke Satuan Kecil (Pcs) untuk Database
     final int qtyPcs = qtyDus * _selectedProduct!.conversionFactor;
     final double pricePcs = priceDus / _selectedProduct!.conversionFactor;
 
     setState(() {
       _cartItems.add({
         'product': _selectedProduct,
-        'qty_dus': qtyDus, // Untuk tampilan user
-        'price_dus': priceDus, // Untuk tampilan user
-        'qty_pcs': qtyPcs, // Untuk database
-        'price_pcs': pricePcs, // Untuk database
+        'qty_dus': qtyDus,
+        'price_dus': priceDus,
+        'qty_pcs': qtyPcs,
+        'price_pcs': pricePcs,
         'subtotal': priceDus * qtyDus,
       });
-
-      // Reset input form kecil
       _selectedProduct = null;
       _qtyController.clear();
       _priceController.clear();
     });
   }
 
-  // 3. Logika SIMPAN KE DATABASE (Update Stok & Average Cost)
   Future<void> _submitTransaction() async {
     if (_selectedSupplierId == null || _cartItems.isEmpty) return;
-
     setState(() => _isLoading = true);
     final supabase = Supabase.instance.client;
 
     try {
-      // A. Hitung Total Transaksi
       double totalTransaction = _cartItems.fold(
         0,
         (sum, item) => sum + item['subtotal'],
       );
-
-      // B. Simpan Header Transaksi
       final txnResponse = await supabase
           .from('transactions')
           .insert({
             'partner_id': int.parse(_selectedSupplierId!),
             'transaction_type': 'IN',
             'total_amount': totalTransaction,
-            'payment_status': 'LUNAS', // Anggap lunas dulu
-            'transaction_date': DateTime.now().toIso8601String(),
+            'payment_status': 'LUNAS',
+            'transaction_date': DateTime.now().toUtc().toIso8601String(),
           })
           .select()
           .single();
 
       final txnId = txnResponse['id'];
 
-      // C. Loop setiap barang di keranjang
       for (var item in _cartItems) {
         Product p = item['product'];
         int newQty = item['qty_pcs'];
         double newPrice = item['price_pcs'];
-
-        // --- RUMUS AVERAGE COST ---
-        // (Stok Lama * Harga Lama) + (Stok Baru * Harga Baru) / (Total Stok)
-        double oldTotalValue =
-            p.stockQuantity * p.averageCostPrice; // Handle null
+        double oldTotalValue = p.stockQuantity * p.averageCostPrice;
         double newTotalValue = oldTotalValue + (newQty * newPrice);
         int totalQty = p.stockQuantity + newQty;
-
         double newAvgCost = totalQty > 0 ? newTotalValue / totalQty : 0;
 
-        // D. Update Produk (Stok & Harga Rata2)
         await supabase
             .from('products')
             .update({
@@ -145,59 +126,69 @@ class _BarangMasukPageState extends State<BarangMasukPage> {
             })
             .eq('id', p.id);
 
-        // E. Simpan Detail Transaksi
         await supabase.from('transaction_items').insert({
           'transaction_id': txnId,
           'product_id': p.id,
-          'quantity_packaging': item['qty_dus'], // History input user (Dus)
-          'quantity_base': newQty, // Data real (Pcs)
-          'price_per_unit': newPrice, // Harga modal per Pcs saat beli
+          'quantity_packaging': item['qty_dus'],
+          'quantity_base': newQty,
+          'price_per_unit': newPrice,
           'subtotal': item['subtotal'],
         });
       }
 
-      // ... kodingan update database di atas ...
-
       if (mounted) {
-        // <--- TAMBAHKAN INI
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Stok Berhasil Masuk!')));
         Navigator.pop(context);
       }
     } catch (e) {
-      if (mounted) {
-        // <--- TAMBAHKAN INI JUGA DI CATCH
+      if (mounted)
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
     } finally {
-      if (mounted) setState(() => _isLoading = false); // <--- DAN DI SINI
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  String _formatCurrency(num amount) {
+    return NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    ).format(amount);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Input Barang Masuk (Inbound)')),
+      appBar: AppBar(
+        title: const Text('Input Barang Masuk (Inbound)'),
+        backgroundColor: _colDarkGunmetal,
+        foregroundColor: _colWhite,
+      ),
       body: Row(
         children: [
-          // --- BAGIAN KIRI: Form Input ---
+          // --- KIRI: FORM INPUT ---
           Expanded(
             flex: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            child: Container(
+              color: Colors.white,
+              padding: const EdgeInsets.all(24.0),
+              child: ListView(
                 children: [
-                  // Pilih Supplier
+                  const Text(
+                    'Data Supplier',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 10),
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(
                       labelText: 'Pilih Supplier',
                       border: OutlineInputBorder(),
                     ),
-                    initialValue: _selectedSupplierId,
+                    value: _selectedSupplierId,
                     items: _suppliers
                         .map(
                           (s) => DropdownMenuItem(
@@ -211,10 +202,9 @@ class _BarangMasukPageState extends State<BarangMasukPage> {
                   ),
                   const Divider(height: 40),
 
-                  // Form Barang
                   const Text(
-                    'Tambah Barang ke List:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    'Rincian Barang',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   const SizedBox(height: 10),
                   DropdownButtonFormField<Product>(
@@ -222,7 +212,7 @@ class _BarangMasukPageState extends State<BarangMasukPage> {
                       labelText: 'Pilih Barang',
                       border: OutlineInputBorder(),
                     ),
-                    initialValue: _selectedProduct,
+                    value: _selectedProduct,
                     items: _products
                         .map(
                           (p) => DropdownMenuItem(
@@ -235,26 +225,26 @@ class _BarangMasukPageState extends State<BarangMasukPage> {
                         .toList(),
                     onChanged: (val) => setState(() => _selectedProduct = val),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 15),
                   Row(
                     children: [
                       Expanded(
-                        child: TextField(
+                        child: TextFormField(
                           controller: _qtyController,
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(
-                            labelText: 'Jml (Dus/Krt)',
+                            labelText: 'Jumlah (Satuan Besar)',
                             border: OutlineInputBorder(),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 15),
                       Expanded(
-                        child: TextField(
+                        child: TextFormField(
                           controller: _priceController,
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(
-                            labelText: 'Harga Beli per Dus',
+                            labelText: 'Harga Beli / Satuan Besar',
                             border: OutlineInputBorder(),
                             prefixText: 'Rp ',
                           ),
@@ -262,12 +252,17 @@ class _BarangMasukPageState extends State<BarangMasukPage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 20),
                   SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
+                    height: 50,
+                    child: ElevatedButton.icon(
                       onPressed: _addToCart,
-                      child: const Text('Masukkan ke List'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _colDarkGunmetal,
+                        foregroundColor: Colors.white,
+                      ),
+                      icon: const Icon(Icons.add_shopping_cart),
+                      label: const Text('TAMBAH KE LIST'),
                     ),
                   ),
                 ],
@@ -275,12 +270,12 @@ class _BarangMasukPageState extends State<BarangMasukPage> {
             ),
           ),
 
-          // --- BAGIAN KANAN: Keranjang / List Sementara ---
+          // --- KANAN: KERANJANG ---
           Expanded(
             flex: 3,
             child: Container(
-              color: Colors.grey[100],
-              padding: const EdgeInsets.all(16),
+              color: _colWhite,
+              padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -290,64 +285,99 @@ class _BarangMasukPageState extends State<BarangMasukPage> {
                   ),
                   const SizedBox(height: 10),
                   Expanded(
-                    child: ListView.separated(
-                      itemCount: _cartItems.length,
-                      separatorBuilder: (c, i) => const Divider(),
-                      itemBuilder: (context, index) {
-                        final item = _cartItems[index];
-                        final Product p = item['product'];
-                        return ListTile(
-                          title: Text(p.name),
-                          subtitle: Text(
-                            '${item['qty_dus']} ${p.packagingUnit ?? "Unit"} @ Rp ${item['price_dus']}',
-                          ),
-                          trailing: Text(
-                            'Rp ${item['subtotal']}',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          leading: IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () =>
-                                setState(() => _cartItems.removeAt(index)),
-                          ),
-                        );
-                      },
+                    child: Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      child: ListView.separated(
+                        itemCount: _cartItems.length,
+                        separatorBuilder: (c, i) => const Divider(height: 1),
+                        itemBuilder: (context, index) {
+                          final item = _cartItems[index];
+                          final Product p = item['product'];
+                          return ListTile(
+                            title: Text(
+                              p.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Text(
+                              '${item['qty_dus']} ${p.packagingUnit ?? "Unit"} @ ${_formatCurrency(item['price_dus'])}',
+                            ),
+                            trailing: Text(
+                              _formatCurrency(item['subtotal']),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            leading: IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () =>
+                                  setState(() => _cartItems.removeAt(index)),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
-                  const Divider(thickness: 2),
+                  const SizedBox(height: 20),
+
                   // Total & Button Simpan
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Total: Rp ${_cartItems.fold(0.0, (sum, item) => sum + (item['subtotal'] as double)).toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Total Pembelian:',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                          Text(
+                            _formatCurrency(
+                              _cartItems.fold(
+                                0.0,
+                                (sum, item) =>
+                                    sum + (item['subtotal'] as double),
+                              ),
+                            ),
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
                       ),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue[800],
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 16,
+                      SizedBox(
+                        height: 50,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _colGreen, // Tombol Hijau Sukses
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 32),
+                            elevation: 4,
+                          ),
+                          onPressed: (_isLoading || _cartItems.isEmpty)
+                              ? null
+                              : _submitTransaction,
+                          icon: _isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.check_circle),
+                          label: Text(
+                            _isLoading ? 'MENYIMPAN...' : 'PROSES STOK MASUK',
                           ),
                         ),
-                        onPressed: (_isLoading || _cartItems.isEmpty)
-                            ? null
-                            : _submitTransaction,
-                        icon: _isLoading
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(Icons.save_alt),
-                        label: const Text('PROSES STOK MASUK'),
                       ),
                     ],
                   ),
