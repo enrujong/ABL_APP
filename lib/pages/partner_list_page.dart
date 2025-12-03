@@ -56,135 +56,232 @@ class _PartnerListPageState extends State<PartnerListPage>
     final addressCtrl = TextEditingController(text: partner?.address ?? '');
     final phoneCtrl = TextEditingController(text: partner?.phone ?? '');
 
-    // Default tipe: Kalau edit ikut data lama, kalau baru ikut tab aktif
     String selectedType = isEdit
         ? partner!.type
         : (_tabController.index == 0 ? 'SUPPLIER' : 'CUSTOMER');
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          isEdit ? 'Edit Mitra' : 'Tambah Mitra Baru',
-          style: TextStyle(
-            color: _colDarkGunmetal,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: SingleChildScrollView(
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: 450, // Lebar ideal untuk dialog form
+          padding: EdgeInsets.zero,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Nama PT / Toko',
-                  prefixIcon: Icon(Icons.business),
+              // --- HEADER DIALOG ---
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 20,
+                  horizontal: 24,
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: addressCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Alamat Lengkap',
-                  prefixIcon: Icon(Icons.map),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: phoneCtrl,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'No. HP / Telp',
-                  prefixIcon: Icon(Icons.phone),
-                ),
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: selectedType,
-                decoration: const InputDecoration(
-                  labelText: 'Tipe Mitra',
-                  border: OutlineInputBorder(),
-                ),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'SUPPLIER',
-                    child: Text('Supplier (Gudang)'),
+                decoration: BoxDecoration(
+                  color: _colDarkGunmetal,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
                   ),
-                  DropdownMenuItem(
-                    value: 'CUSTOMER',
-                    child: Text('Customer (Toko)'),
-                  ),
-                ],
-                onChanged: (val) => selectedType = val!,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      isEdit ? Icons.edit_note : Icons.person_add,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      isEdit ? 'Edit Data Mitra' : 'Tambah Mitra Baru',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // --- FORM CONTENT ---
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Nama PT / Toko',
+                        prefixIcon: Icon(
+                          Icons.business,
+                          color: _colDarkGunmetal,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: addressCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Alamat Lengkap',
+                        prefixIcon: Icon(Icons.map, color: _colDarkGunmetal),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: phoneCtrl,
+                            keyboardType: TextInputType.phone,
+                            decoration: InputDecoration(
+                              labelText: 'No. HP / Telp',
+                              prefixIcon: Icon(
+                                Icons.phone,
+                                color: _colDarkGunmetal,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey[50],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: selectedType,
+                      decoration: InputDecoration(
+                        labelText: 'Tipe Mitra',
+                        prefixIcon: Icon(
+                          Icons.category,
+                          color: _colDarkGunmetal,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'SUPPLIER',
+                          child: Text('Supplier (Gudang)'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'CUSTOMER',
+                          child: Text('Customer (Toko)'),
+                        ),
+                      ],
+                      onChanged: (val) => selectedType = val!,
+                    ),
+                  ],
+                ),
+              ),
+
+              const Divider(height: 1),
+
+              // --- FOOTER BUTTONS ---
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (isEdit) ...[
+                      TextButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _deletePartner(partner!.id);
+                        },
+                        icon: Icon(Icons.delete_outline, color: _colRed),
+                        label: Text('Hapus', style: TextStyle(color: _colRed)),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                    ] else
+                      const Spacer(),
+
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        'Batal',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _colDarkGunmetal,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      icon: const Icon(Icons.save),
+                      label: Text(isEdit ? 'SIMPAN PERUBAHAN' : 'SIMPAN DATA'),
+                      onPressed: () async {
+                        if (nameCtrl.text.isEmpty) return;
+                        try {
+                          final data = {
+                            'name': nameCtrl.text,
+                            'type': selectedType,
+                            'address': addressCtrl.text,
+                            'phone': phoneCtrl.text,
+                          };
+
+                          if (isEdit) {
+                            await Supabase.instance.client
+                                .from('partners')
+                                .update(data)
+                                .eq('id', partner!.id);
+                          } else {
+                            await Supabase.instance.client
+                                .from('partners')
+                                .insert(data);
+                          }
+
+                          Navigator.pop(context);
+                          _fetchPartners();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                isEdit ? 'Data Diperbarui' : 'Mitra Disimpan',
+                              ),
+                            ),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text('Gagal: $e')));
+                        }
+                      },
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
         ),
-        actions: [
-          // Tombol Hapus (Hanya muncul jika Edit)
-          if (isEdit)
-            TextButton.icon(
-              onPressed: () {
-                Navigator.pop(context); // Tutup dialog edit dulu
-                _deletePartner(partner!.id); // Panggil fungsi hapus
-              },
-              icon: Icon(Icons.delete, color: _colRed),
-              label: Text('Hapus', style: TextStyle(color: _colRed)),
-            ),
-
-          // Spacer agar tombol Simpan ada di kanan
-          if (isEdit) const SizedBox(width: 20),
-
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _colDarkGunmetal,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () async {
-              if (nameCtrl.text.isEmpty) return;
-              try {
-                final data = {
-                  'name': nameCtrl.text,
-                  'type': selectedType,
-                  'address': addressCtrl.text,
-                  'phone': phoneCtrl.text,
-                };
-
-                if (isEdit) {
-                  await Supabase.instance.client
-                      .from('partners')
-                      .update(data)
-                      .eq('id', partner!.id);
-                } else {
-                  await Supabase.instance.client.from('partners').insert(data);
-                }
-
-                Navigator.pop(context);
-                _fetchPartners();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      isEdit ? 'Data Diperbarui' : 'Mitra Disimpan',
-                    ),
-                  ),
-                );
-              } catch (e) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('Gagal: $e')));
-              }
-            },
-            child: Text(isEdit ? 'SIMPAN PERUBAHAN' : 'SIMPAN'),
-          ),
-        ],
-        actionsAlignment: isEdit
-            ? MainAxisAlignment.spaceBetween
-            : MainAxisAlignment.end, // Agar tombol Hapus mojok kiri
       ),
     );
   }
